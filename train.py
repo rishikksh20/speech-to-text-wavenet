@@ -5,6 +5,7 @@ from model import *
 
 __author__ = 'namju.kim@kakaobrain.com'
 
+# Modified by rishikksh20@gmail.com
 
 # set log level to debug
 tf.sg_verbosity(10)
