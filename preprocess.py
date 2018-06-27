@@ -63,6 +63,59 @@ def process_vctk(csv_file):
             # save mfcc
             np.save(target_filename, mfcc, allow_pickle=False)
 
+#
+# process CMU corpus
+#
+
+def process_cmuarctic(csv_file):
+
+    # create csv writer
+    writer = csv.writer(csv_file, delimiter=',')
+    _data_path = "/home/rishikesh/Dev/Speech_Synthesis/keitho_tacotron/tacotron"
+    # read label-info
+    #df = pd.read_table(_data_path + 'VCTK-Corpus/speaker-info.txt', usecols=['ID'],
+    #                   index_col=False, delim_whitespace=True)
+    path = _data_path+"/english_male/metadata.csv"
+    df=pd.read_csv(path,sep="|",header=None)
+
+    # read file IDs
+    file_ids = list(df[0])
+    #for d in [_data_path + 'VCTK-Corpus/txt/p%d/' % uid for uid in df.ID.values]:
+    #    file_ids.extend([f[-12:-4] for f in sorted(glob.glob(d + '*.txt'))])
+
+    for i, f in enumerate(file_ids):
+
+        # wave file name
+        wave_file = _data_path + 'english_male/wavs/'+f+'.wav'
+        fn = wave_file.split('/')[-1]
+        target_filename = 'asset/data/preprocess/mfcc/' + fn + '.npy'
+        if os.path.exists( target_filename ):
+            continue
+        # print info
+        print("CMU corpus preprocessing (%d / %d) - '%s']" % (i, len(file_ids), wave_file))
+
+        # load wave file
+        wave, sr = librosa.load(wave_file, mono=True, sr=None)
+
+        # re-sample ( 48K -> 16K )
+        wave = wave[::3]
+
+        # get mfcc feature
+        mfcc = librosa.feature.mfcc(wave, sr=16000)
+
+        # get label index
+        # label = data.str2index(open(_data_path + 'VCTK-Corpus/txt/%s/' % f[:4] + f + '.txt').read())
+        label = data.str2index(df[2][i])
+        # save result ( exclude small mfcc data to prevent ctc loss )
+        if len(label) < mfcc.shape[1]:
+            # save meta info
+            writer.writerow([fn] + label)
+            # save mfcc
+            np.save(target_filename, mfcc, allow_pickle=False)
+
+
+
+
 
 #
 # process LibriSpeech corpus
@@ -216,45 +269,30 @@ if not os.path.exists('asset/data/preprocess/mfcc'):
 #
 
 # VCTK corpus
-csv_f = open('asset/data/preprocess/meta/train.csv', 'w')
-process_vctk(csv_f)
-csv_f.close()
+# csv_f = open('asset/data/preprocess/meta/train.csv', 'w')
+# process_vctk(csv_f)
+# csv_f.close()
 
 # LibriSpeech corpus for train
-csv_f = open('asset/data/preprocess/meta/train.csv', 'a+')
-process_libri(csv_f, 'train-clean-360')
-csv_f.close()
+# csv_f = open('asset/data/preprocess/meta/train.csv', 'a+')
+#process_libri(csv_f, 'train-clean-360')
+# csv_f.close()
 
 # TEDLIUM corpus for train
+#csv_f = open('asset/data/preprocess/meta/train.csv', 'a+')
+#process_ted(csv_f, 'train')
+#csv_f.close()
+
+# Preprocess for CMU training
 csv_f = open('asset/data/preprocess/meta/train.csv', 'a+')
-process_ted(csv_f, 'train')
+process_cmuarctic(csv_f, 'train')
 csv_f.close()
+
+
 
 #
 # Run pre-processing for validation
 #
 
-# LibriSpeech corpus for valid
-csv_f = open('asset/data/preprocess/meta/valid.csv', 'w')
-process_libri(csv_f, 'dev-clean')
-csv_f.close()
 
-# TEDLIUM corpus for valid
-csv_f = open('asset/data/preprocess/meta/valid.csv', 'a+')
-process_ted(csv_f, 'dev')
-csv_f.close()
-
-#
-# Run pre-processing for testing
-#
-
-# LibriSpeech corpus for test
-csv_f = open('asset/data/preprocess/meta/test.csv', 'w')
-process_libri(csv_f, 'test-clean')
-csv_f.close()
-
-# TEDLIUM corpus for test
-csv_f = open('asset/data/preprocess/meta/test.csv', 'a+')
-process_ted(csv_f, 'test')
-csv_f.close()
 
